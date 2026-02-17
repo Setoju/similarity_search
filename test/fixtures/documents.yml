@@ -1,0 +1,8 @@
+one:
+  content: "Ruby is a dynamic programming language"
+
+two:
+  content: "Python is great for data science"
+
+three:
+  content: "JavaScript runs in the browser"
