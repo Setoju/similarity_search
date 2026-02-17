@@ -47,4 +47,10 @@ group :development, :test do
 
   # Omakase Ruby styling [https://github.com/rails/rubocop-rails-omakase/]
   gem "rubocop-rails-omakase", require: false
+
+  # HTTP request stubbing for tests
+  gem "webmock"
+
+  # Pin minitest for Rails 8 compatibility
+  gem "minitest", "~> 5.25"
 end
