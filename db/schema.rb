@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_02_18_073013) do
+ActiveRecord::Schema[8.0].define(version: 2026_02_18_075402) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -39,9 +39,12 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_18_073013) do
     t.float "embedding", null: false, array: true
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "chunk_id"
+    t.index ["chunk_id"], name: "index_sentences_on_chunk_id"
     t.index ["document_id"], name: "index_sentences_on_document_id"
   end
 
   add_foreign_key "chunks", "documents"
+  add_foreign_key "sentences", "chunks"
   add_foreign_key "sentences", "documents"
 end
