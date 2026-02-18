@@ -59,6 +59,35 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "All documents cleared", json["message"]
   end
 
+  test "index_status returns correct counts" do
+    Document.create!(content: "Pending document")
+
+    get index_status_documents_url
+    assert_response :success
+
+    json = JSON.parse(response.body)
+    assert_equal 1, json["pending"]
+    assert_equal 0, json["processing"]
+    assert_equal 0, json["completed"]
+    assert_equal 0, json["failed"]
+  end
+
+  test "sentence_search returns relevant sentences" do
+    doc = Document.create!(content: "This is a test document. It contains multiple sentences.")
+    doc.update_column(:embedding, @sample_embedding)
+    doc.update_column(:index_status, "completed")
+    chunk = doc.chunks.create!(start_char: 0, end_char: doc.content.length, embedding: @sample_embedding)
+    sentemce1 = chunk.sentences.create!(start_char: 0, end_char: 24, document_id: doc.id, embedding: @sample_embedding)
+    sentence2 = chunk.sentences.create!(start_char: 25, end_char: 57, document_id: doc.id, embedding: @sample_embedding) 
+
+    post sentence_search_documents_url, params: { query: "test" }
+    assert_response :success
+
+    json = JSON.parse(response.body)
+    assert_kind_of Array, json
+    assert_equal "This is a test document.", json.first["content"]
+  end
+
   private
 
   def stub_ollama_success
