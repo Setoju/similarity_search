@@ -23,6 +23,9 @@ gem "solid_cable"
 gem "dotenv-rails"
 gem "faraday"
 
+gem "pragmatic_segmenter"
+gem "whatlanguage"
+
 # Reduces boot times through caching; required in config/boot.rb
 gem "bootsnap", require: false
 
