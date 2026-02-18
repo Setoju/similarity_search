@@ -4,7 +4,7 @@ class CreateSentences < ActiveRecord::Migration[8.0]
       t.references :document, null: false, foreign_key: true
       t.integer :start_char, null: false
       t.integer :end_char, null: false
-      t.float :embedding, null: false, array: true
+      t.float :embedding, null: true, array: true
 
       t.timestamps
     end
