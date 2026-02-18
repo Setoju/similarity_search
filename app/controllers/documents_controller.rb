@@ -48,7 +48,7 @@ class DocumentsController < ApplicationController
   end
 
   def clear
-    Document.delete_all
+    Document.destroy_all
     render json: { message: 'All documents cleared' }
   end
 
