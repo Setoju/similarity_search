@@ -1,0 +1,15 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  document: one
+  chunk: one
+  start_char: 0
+  end_char: 36
+  embedding: [0.1, 0.2, 0.3]
+
+two:
+  document: two
+  chunk: two
+  start_char: 0
+  end_char: 34
+  embedding: [0.4, 0.5, 0.6]
