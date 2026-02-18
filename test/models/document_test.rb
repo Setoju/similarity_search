@@ -1,6 +1,8 @@
 require "test_helper"
 
 class DocumentTest < ActiveSupport::TestCase
+  include ActiveJob::TestHelper
+
   setup do
     @sample_embedding = Array.new(768) { rand(-1.0..1.0) }
     stub_ollama_success
@@ -22,18 +24,15 @@ class DocumentTest < ActiveSupport::TestCase
     refute document.valid?
   end
 
-  test "generates embedding on create" do
+  test "creates with pending index_status" do
     document = Document.create!(content: "Test document")
-    assert_kind_of Array, document.embedding
-    assert_equal 768, document.embedding.length
+    assert_equal "pending", document.index_status
   end
 
-  test "does not regenerate embedding on update" do
-    document = Document.create!(content: "Original")
-    original_embedding = document.embedding.dup
-
-    document.update!(content: "Updated content")
-    assert_equal original_embedding, document.embedding
+  test "enqueues embedding job on create" do
+    assert_enqueued_with(job: DocumentEmbeddingJob) do
+      Document.create!(content: "Test document")
+    end
   end
 
   private

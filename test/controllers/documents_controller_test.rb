@@ -3,7 +3,7 @@ require "test_helper"
 class DocumentsControllerTest < ActionDispatch::IntegrationTest
   setup do
     @sample_embedding = Array.new(768) { rand(-1.0..1.0) }
-    Document.delete_all
+    Document.destroy_all
     stub_ollama_success
   end
 

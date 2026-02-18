@@ -3,7 +3,7 @@ require "test_helper"
 class Embeddings::DocumentSearchTest < ActiveSupport::TestCase
   setup do
     @query_embedding = Array.new(768) { 0.5 }
-    Document.delete_all
+    Document.destroy_all
     stub_ollama_with(@query_embedding)
   end
 
