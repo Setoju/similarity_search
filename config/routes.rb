@@ -11,6 +11,8 @@ Rails.application.routes.draw do
   resources :documents, only: [:create, :index] do
     collection do
       post :search
+      post :sentence_search
+      get :index_status
       delete :clear
     end
   end
