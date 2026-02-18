@@ -1,6 +1,6 @@
 module Embeddings
   class SentenceSearch
-    def initialize(query, top: 10)
+    def initialize(query, top: 5)
       @query = query
       @top = top
     end
