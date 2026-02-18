@@ -150,7 +150,8 @@ GEM
       net-smtp
     marcel (1.1.0)
     mini_mime (1.1.5)
-    minitest (5.27.0)
+    minitest (6.0.1)
+      prism (~> 1.5)
     msgpack (1.8.0)
     net-http (0.9.1)
       uri (>= 0.11.1)
@@ -331,7 +332,7 @@ DEPENDENCIES
   dotenv-rails
   faraday
   kamal
-  minitest (~> 5.25)
+  minitest (~> 6.0)
   pg (~> 1.1)
   pragmatic_segmenter
   puma (>= 5.0)
