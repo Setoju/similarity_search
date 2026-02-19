@@ -11,13 +11,15 @@ class DocumentsController < ApplicationController
 
   def search
     query = params[:query]
-    results = Embeddings::DocumentSearch.new(query).call
+    search_type = params[:search_type]&.to_s&.downcase || "cosine"
+    results = Embeddings::DocumentSearch.new(query, search_type).call
     render json: results.map { |doc| { content: doc.content } }
   end
 
   def sentence_search
     query = params[:query]
-    results = Embeddings::SentenceSearch.new(query).call
+    search_type = params[:search_type]&.to_s&.downcase || "cosine"
+    results = Embeddings::SentenceSearch.new(query, search_type).call
     render json: results.map { |result|
       {
         content: result[:content],

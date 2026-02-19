@@ -1,8 +1,9 @@
 module Embeddings
   class SentenceSearch
-    def initialize(query, top: 5)
+    def initialize(query, search_type = 'cosine', top: 5)
       @query = query
       @top = top
+      @similarity_calculator = Similarity::Resolver.call(search_type)
     end
 
     def call
@@ -25,7 +26,7 @@ module Embeddings
 
       scored = documents.filter_map do |doc|
         next unless doc.embedding&.is_a?(Array) && query_vector&.is_a?(Array)
-        score = Similarity::Cosine.call(query_vector, doc.embedding)
+        score = @similarity_calculator.call(query_vector, doc.embedding)
         [doc, score]
       end
 
@@ -37,7 +38,7 @@ module Embeddings
 
       scored = chunks.filter_map do |chunk|
         next unless chunk.embedding&.is_a?(Array) && query_vector&.is_a?(Array)
-        score = Similarity::Cosine.call(query_vector, chunk.embedding)
+        score = @similarity_calculator.call(query_vector, chunk.embedding)
         [chunk, score]
       end
 
@@ -49,7 +50,7 @@ module Embeddings
 
       scored = sentences.filter_map do |sentence|
         next unless sentence.embedding&.is_a?(Array) && query_vector&.is_a?(Array)
-        score = Similarity::Cosine.call(query_vector, sentence.embedding)
+        score = @similarity_calculator.call(query_vector, sentence.embedding)
         [sentence, score]
       end
 

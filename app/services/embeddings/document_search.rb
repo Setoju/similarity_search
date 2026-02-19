@@ -1,8 +1,9 @@
 module Embeddings
     class DocumentSearch
-        def initialize(query, top: 5)
+        def initialize(query, search_type = 'cosine', top: 5)
             @query = query
             @top = top
+            @similarity_calculator = Similarity::Resolver.call(search_type)
         end
 
         def call
@@ -13,7 +14,7 @@ module Embeddings
 
             scored = all_docs.map do |doc|
                 if doc.embedding&.is_a?(Array) && query_vector&.is_a?(Array)
-                    [doc, Similarity::Cosine.call(query_vector, doc.embedding)]
+                    [doc, @similarity_calculator.call(query_vector, doc.embedding)]
                 else
                     nil
                 end
