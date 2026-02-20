@@ -10,6 +10,7 @@ module Embeddings
       @conn = Faraday.new(url: BASE_URL) do |f|
         f.request :json
         f.adapter Faraday.default_adapter
+        f.response :raise_error
       end
     end
 
@@ -26,6 +27,9 @@ module Embeddings
       end
 
       parse_response(response)
+    rescue Faraday::ClientError => e
+      body = JSON.parse(e.response[:body]) rescue {}
+      raise "Ollama error: #{body['error'] || e.message}"
     rescue Faraday::TimeoutError
       raise "Ollama request timed out. Model might be loading - try again in a moment."
     rescue Faraday::ConnectionFailed
