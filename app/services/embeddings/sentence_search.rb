@@ -1,8 +1,9 @@
 module Embeddings
   class SentenceSearch
-    def initialize(query, search_type = 'cosine', top: 5)
+    def initialize(query, search_type = 'cosine', top: 5, threshold: 0.4)
       @query = query
       @top = top
+      @threshold = threshold
       @similarity_calculator = Similarity::Resolver.call(search_type)
     end
 
@@ -30,7 +31,7 @@ module Embeddings
         [doc, score]
       end
 
-      scored.max_by { |_, score| score }&.first
+      scored.select { |_, score| score > @threshold }.max_by { |_, score| score }&.first
     end
 
     def find_best_chunk(document, query_vector)
@@ -42,7 +43,7 @@ module Embeddings
         [chunk, score]
       end
 
-      scored.max_by { |_, score| score }&.first
+      scored.select { |_, score| score > @threshold }.max_by { |_, score| score }&.first
     end
 
     def find_best_sentences(chunk, query_vector)
@@ -54,7 +55,7 @@ module Embeddings
         [sentence, score]
       end
 
-      scored.sort_by { |_, score| -score }.first(@top).map do |sentence, score|
+      scored.select { |_, score| score > @threshold }.sort_by { |_, score| -score }.first(@top).map do |sentence, score|
         {
           sentence: sentence,
           content: sentence.content,
