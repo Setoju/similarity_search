@@ -12,6 +12,7 @@ Rails.application.routes.draw do
     collection do
       post :search
       post :sentence_search
+      post :rag
       get :index_status
       delete :clear
     end

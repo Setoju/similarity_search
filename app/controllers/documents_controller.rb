@@ -32,6 +32,16 @@ class DocumentsController < ApplicationController
     }
   end
 
+  def rag
+    query = params[:query]
+    search_type = params[:search_type]&.to_s&.downcase || "cosine"
+
+    result = Rag::Query.new(query, search_type: search_type).call
+    render json: result
+  rescue RuntimeError => e
+    render json: { error: e.message }, status: :unprocessable_entity
+  end
+
   def index_status
     pending_count = Document.where(index_status: "pending").count
     processing_count = Document.where(index_status: "processing").count
