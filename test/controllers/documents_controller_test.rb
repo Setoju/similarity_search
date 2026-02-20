@@ -5,6 +5,7 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
     @sample_embedding = Array.new(768) { rand(-1.0..1.0) }
     Document.destroy_all
     stub_ollama_success
+    stub_gemini_success
   end
 
   test "index returns all documents" do
@@ -88,6 +89,19 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "This is a test document.", json.first["content"]
   end
 
+  test "rag returns answer and sources" do
+    doc = Document.create!(content: "Ruby is a programming language.")
+    doc.update_column(:embedding, @sample_embedding)
+    doc.update_column(:index_status, "completed")
+    chunk = doc.chunks.create!(start_char: 0, end_char: doc.content.length, embedding: @sample_embedding)
+    sentence = chunk.sentences.create!(start_char: 0, end_char: doc.content.length, document_id: doc.id, embedding: @sample_embedding)
+
+    post rag_documents_url, params: { query: "What is Ruby?" }
+    assert_response :success
+    json = JSON.parse(response.body)
+    assert json["answer"].present?
+  end
+
   private
 
   def stub_ollama_success
@@ -95,6 +109,25 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
       .to_return(
         status: 200,
         body: { embedding: @sample_embedding }.to_json,
+        headers: { "Content-Type" => "application/json" }
+      )
+  end
+
+  def stub_gemini_success
+    stub_request(:post, "https://generativelanguage.googleapis.com/v1beta/models/gemma-3-1b-it:generateContent?key=#{ENV.fetch("GOOGLE_API_KEY")}")
+      .to_return(
+        status: 200,
+        body: {
+          candidates: [
+            {
+              content: {
+                parts: [
+                  { text: "Generated answer" }
+                ]
+              }
+            }
+          ]
+        }.to_json,
         headers: { "Content-Type" => "application/json" }
       )
   end

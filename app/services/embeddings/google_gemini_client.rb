@@ -32,6 +32,9 @@ module Embeddings
       end
 
       parse_response(response)
+    rescue Faraday::ClientError => e
+      body = JSON.parse(e.response[:body]) rescue {}
+      raise "Google Gemini API error: #{body.dig('error', 'message') || e.message}"
     rescue Faraday::TimeoutError
       raise "Google Gemini request timed out."
     rescue Faraday::ConnectionFailed
