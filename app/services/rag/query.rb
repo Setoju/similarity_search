@@ -8,15 +8,20 @@ module Rag
 
     def call
       sentences = retrieve_sentences
-      raise "No relevant content found in the database." if sentences.empty?
 
-      context = build_context(sentences)
+      if sentences.empty?
+        context = ""
+      else
+        context = build_context(sentences)
+      end
+
       prompt  = build_prompt(context)
       answer  = Embeddings::GoogleGeminiClient.new.generate(prompt)
+      sources = format_sources(sentences).empty? ? "Internet" : format_sources(sentences)
 
       {
         answer: answer,
-        sources: format_sources(sentences)
+        sources: sources
       }
     end
 
@@ -33,13 +38,22 @@ module Rag
     end
 
     def build_prompt(context)
-      <<~PROMPT
-        Answer the question using the following context:
+      if context.empty?
+        <<~PROMPT
+          Answer following question shortly based on your knowledge
 
-        #{context}
+          Question: #{@query}
+        PROMPT
+      else
+        <<~PROMPT
+          Answer the question using only the context provided below.
 
-        Question: #{@query}
-      PROMPT
+          Context:
+          #{context}
+
+          Question: #{@query}
+        PROMPT
+      end
     end
 
     def format_sources(sentences)
