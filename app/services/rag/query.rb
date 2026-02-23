@@ -8,15 +8,15 @@ module Rag
 
     def call
       sentences = retrieve_sentences
+      knowledge_based = sentences.empty?
 
-      if sentences.empty?
-        context = ""
-      else
-        context = build_context(sentences)
-      end
+      context = knowledge_based ? "" : build_context(sentences)
 
       prompt  = build_prompt(context)
       answer  = Embeddings::GoogleGeminiClient.new.generate(prompt)
+
+      persist_knowledge(answer) if knowledge_based
+
       sources = format_sources(sentences).empty? ? "Internet" : format_sources(sentences)
 
       {
@@ -67,6 +67,21 @@ module Rag
           end_char:    result[:end_char]
         }
       end
+    end
+
+    def persist_knowledge(answer)
+      key = knowledge_cache_key
+      return if Rails.cache.exist?(key) || Document.exists?(content: answer)
+
+      Rails.cache.write(key, true, expires_in: 1.hour)
+      Document.create!(content: answer)
+    rescue => e
+      Rails.logger.error "Failed to persist knowledge-based answer: #{e.message}"
+    end
+
+    def knowledge_cache_key
+      normalized = Preprocessing::Normalizer.call(@query)
+      "rag_knowledge:#{Digest::SHA256.hexdigest(normalized)}"
     end
   end
 end
