@@ -1,6 +1,6 @@
 module Embeddings
   class SentenceSearch
-    def initialize(query, search_type = 'cosine', top: 5, threshold: 0.4)
+    def initialize(query, search_type = 'cosine', top: 5, threshold: 0.6)
       @query = query
       @top = top
       @threshold = threshold
