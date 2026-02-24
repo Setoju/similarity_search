@@ -14,8 +14,6 @@ class DocumentEmbeddingJob < ApplicationJob
 
       chunks = create_chunks(document, client)
 
-      create_sentences(document, chunks)
-
       document.update!(index_status: "completed")
     rescue StandardError => e
       Rails.logger.error "DocumentEmbeddingJob failed for document #{document_id}: #{e.message}"
@@ -56,24 +54,5 @@ class DocumentEmbeddingJob < ApplicationJob
     end
 
     created_chunks
-  end
-
-  def create_sentences(document, chunks)
-    chunks.each do |chunk_data|
-      chunk = chunk_data[:chunk]
-      content = chunk_data[:content]
-
-      sentences_data = Preprocessing::Sentencer.call(content, offset: chunk.start_char)
-
-      sentences_data.each do |sentence_info|
-        next if sentence_info[:content].blank?
-
-        chunk.sentences.create!(
-          document: document,
-          start_char: sentence_info[:start_char],
-          end_char: sentence_info[:end_char]
-        )
-      end
-    end
   end
 end

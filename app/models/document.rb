@@ -2,7 +2,6 @@ class Document < ApplicationRecord
   after_create_commit :enqueue_embedding_job
 
   has_many :chunks, dependent: :destroy
-  has_many :sentences, through: :chunks, dependent: :destroy
 
   validates :content, presence: true
   validates :index_status, presence: true, inclusion: { in: %w[pending processing completed failed] }
