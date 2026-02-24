@@ -11,14 +11,15 @@ class Embeddings::DocumentSearchTest < ActiveSupport::TestCase
     # Create docs with different embeddings
     # Query embedding is all 0.5s, so identical vector should rank first
     identical = create_document_with_embedding("Identical", Array.new(768) { 0.5 })
-    different = create_document_with_embedding("Different", Array.new(768) { |i| i.even? ? 1.0 : -1.0 })
+    different = create_document_with_embedding("Different", Array.new(768) { |i| i < 384 ? 1.0 : 0.0 })
 
     results = Embeddings::DocumentSearch.new("query").call
 
-    assert_includes results, identical
-    assert_includes results, different
+    result_ids = results.map { |r| r[:id] }
+    assert_includes result_ids, identical.id
+    assert_includes result_ids, different.id
     # Identical embedding should be first (similarity = 1.0)
-    assert_equal identical, results.first
+    assert_equal identical.id, results.first[:id]
   end
 
   test "returns top n results" do
@@ -35,8 +36,9 @@ class Embeddings::DocumentSearchTest < ActiveSupport::TestCase
 
     results = Embeddings::DocumentSearch.new("query").call
 
-    assert_includes results, doc_with
-    refute_includes results, doc_without
+    result_ids = results.map { |r| r[:id] }
+    assert_includes result_ids, doc_with.id
+    refute_includes result_ids, doc_without.id
   end
 
   test "returns empty array when no documents exist" do
