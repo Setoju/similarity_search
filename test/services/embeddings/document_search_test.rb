@@ -4,7 +4,7 @@ class Embeddings::DocumentSearchTest < ActiveSupport::TestCase
   setup do
     @query_embedding = Array.new(768) { 0.5 }
     Document.destroy_all
-    stub_ollama_with(@query_embedding)
+    stub_ollama(@query_embedding)
   end
 
   test "returns documents sorted by similarity" do
@@ -47,15 +47,6 @@ class Embeddings::DocumentSearchTest < ActiveSupport::TestCase
   end
 
   private
-
-  def stub_ollama_with(embedding)
-    stub_request(:post, "http://localhost:11434/api/embeddings")
-      .to_return(
-        status: 200,
-        body: { embedding: embedding }.to_json,
-        headers: { "Content-Type" => "application/json" }
-      )
-  end
 
   def create_document_with_embedding(content, embedding)
     doc = Document.create!(content: content)

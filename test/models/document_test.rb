@@ -5,7 +5,7 @@ class DocumentTest < ActiveSupport::TestCase
 
   setup do
     @sample_embedding = Array.new(768) { rand(-1.0..1.0) }
-    stub_ollama_success
+    stub_ollama(@sample_embedding)
   end
 
   test "valid with content" do
@@ -35,14 +35,4 @@ class DocumentTest < ActiveSupport::TestCase
     end
   end
 
-  private
-
-  def stub_ollama_success
-    stub_request(:post, "http://localhost:11434/api/embeddings")
-      .to_return(
-        status: 200,
-        body: { embedding: @sample_embedding }.to_json,
-        headers: { "Content-Type" => "application/json" }
-      )
-  end
 end
