@@ -21,7 +21,7 @@ class DocumentEmbeddingJobTest < ActiveJob::TestCase
     assert_equal 768, document.embedding.length
   end
 
-  test "creates chunks and sentences" do
+  test "creates chunks" do
     document = Document.create!(content: "Hello world. This is a test. Another sentence here.")
     
     perform_enqueued_jobs
@@ -29,7 +29,6 @@ class DocumentEmbeddingJobTest < ActiveJob::TestCase
     document.reload
     assert_equal "completed", document.index_status
     assert document.chunks.any?, "Should create chunks"
-    assert document.sentences.any?, "Should create sentences"
   end
 
   private

@@ -73,20 +73,18 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
     assert_equal 0, json["failed"]
   end
 
-  test "sentence_search returns relevant sentences" do
+  test "chunk_search returns relevant chunks" do
     doc = Document.create!(content: "This is a test document. It contains multiple sentences.")
     doc.update_column(:embedding, @sample_embedding)
     doc.update_column(:index_status, "completed")
     chunk = doc.chunks.create!(start_char: 0, end_char: doc.content.length, embedding: @sample_embedding)
-    sentemce1 = chunk.sentences.create!(start_char: 0, end_char: 24, document_id: doc.id, embedding: @sample_embedding)
-    sentence2 = chunk.sentences.create!(start_char: 25, end_char: 57, document_id: doc.id, embedding: @sample_embedding) 
 
-    post sentence_search_documents_url, params: { query: "test" }
+    post chunk_search_documents_url, params: { query: "test" }
     assert_response :success
 
     json = JSON.parse(response.body)
     assert_kind_of Array, json
-    assert_equal "This is a test document.", json.first["content"]
+    assert_equal "This is a test document. It contains multiple sentences.", json.first["content"]
   end
 
   test "rag returns answer and sources" do
@@ -94,7 +92,6 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
     doc.update_column(:embedding, @sample_embedding)
     doc.update_column(:index_status, "completed")
     chunk = doc.chunks.create!(start_char: 0, end_char: doc.content.length, embedding: @sample_embedding)
-    sentence = chunk.sentences.create!(start_char: 0, end_char: doc.content.length, document_id: doc.id, embedding: @sample_embedding)
 
     post rag_documents_url, params: { query: "What is Ruby?" }
     assert_response :success
