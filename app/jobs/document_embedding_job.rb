@@ -14,7 +14,7 @@ class DocumentEmbeddingJob < ApplicationJob
 
       chunks = create_chunks(document, client)
 
-      create_sentences(document, chunks, client)
+      create_sentences(document, chunks)
 
       document.update!(index_status: "completed")
     rescue StandardError => e
@@ -58,7 +58,7 @@ class DocumentEmbeddingJob < ApplicationJob
     created_chunks
   end
 
-  def create_sentences(document, chunks, client)
+  def create_sentences(document, chunks)
     chunks.each do |chunk_data|
       chunk = chunk_data[:chunk]
       content = chunk_data[:content]
@@ -68,14 +68,10 @@ class DocumentEmbeddingJob < ApplicationJob
       sentences_data.each do |sentence_info|
         next if sentence_info[:content].blank?
 
-        normalized_content = Preprocessing::Normalizer.call(sentence_info[:content])
-        embedding = client.embed(normalized_content)
-
         chunk.sentences.create!(
           document: document,
           start_char: sentence_info[:start_char],
-          end_char: sentence_info[:end_char],
-          embedding: embedding
+          end_char: sentence_info[:end_char]
         )
       end
     end
