@@ -13,7 +13,7 @@ class DocumentsController < ApplicationController
     query = params[:query]
     search_type = params[:search_type]&.to_s&.downcase || "cosine"
     results = Embeddings::DocumentSearch.new(query, search_type).call
-    render json: results.map { |doc| { content: doc.content } }
+    render json: results
   end
 
   def chunk_search
