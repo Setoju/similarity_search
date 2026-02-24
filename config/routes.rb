@@ -11,7 +11,7 @@ Rails.application.routes.draw do
   resources :documents, only: [:create, :index] do
     collection do
       post :search
-      post :sentence_search
+      post :chunk_search
       post :rag
       get :index_status
       delete :clear
