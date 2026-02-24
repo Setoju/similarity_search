@@ -56,4 +56,6 @@ group :development, :test do
 
   # Pin minitest for Rails 8 compatibility
   gem "minitest", "~> 5.25"
+
+  gem "simplecov", require: false
 end
