@@ -54,19 +54,16 @@ class DocumentsController < ApplicationController
   end
 
   def index_status
-    pending_count = Document.where(index_status: "pending").count
-    processing_count = Document.where(index_status: "processing").count
-    completed_count = Document.where(index_status: "completed").count
-    failed_count = Document.where(index_status: "failed").count
+    counts = Document.group(:index_status).count
     total_count = Document.count
 
     render json: {
-      pending: pending_count,
-      processing: processing_count,
-      completed: completed_count,
-      failed: failed_count,
+      pending: counts["pending"] || 0,
+      processing: counts["processing"] || 0,
+      completed: counts["completed"] || 0,
+      failed: counts["failed"] || 0,
       total: total_count,
-      in_progress: pending_count + processing_count
+      in_progress: (counts["pending"] || 0) + (counts["processing"] || 0)
     }
   end
 

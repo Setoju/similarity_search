@@ -9,6 +9,7 @@ class Document < ApplicationRecord
 
   scope :pending_or_processing, -> { where(index_status: %w[pending processing]) }
   scope :completed, -> { where(index_status: "completed") }
+  scope :failed, -> { where(index_status: "failed") }
 
   private
 
