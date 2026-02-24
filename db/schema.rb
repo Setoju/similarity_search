@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_02_18_075402) do
+ActiveRecord::Schema[8.0].define(version: 2026_02_23_000001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -36,7 +36,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_18_075402) do
     t.bigint "document_id", null: false
     t.integer "start_char", null: false
     t.integer "end_char", null: false
-    t.float "embedding", null: false, array: true
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "chunk_id"
