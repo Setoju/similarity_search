@@ -1,23 +1,26 @@
 module Rag
   class Query
-    def initialize(query, search_type: "cosine", top: 5)
+    def initialize(query, search_type: "cosine", top: 5, rerank: false, rerank_threshold: Reranking::LlmReranker::DEFAULT_THRESHOLD)
       @query = query
       @search_type = search_type
       @top = top
+      @rerank = rerank
+      @rerank_threshold = rerank_threshold
     end
 
     def call
-      sentences = retrieve_sentences
-      knowledge_based = sentences.empty?
+      chunks = retrieve_chunks
+      chunks = rerank(chunks) if @rerank && chunks.any?
+      knowledge_based = chunks.empty?
 
-      context = knowledge_based ? "" : build_context(sentences)
+      context = knowledge_based ? "" : build_context(chunks)
 
-      prompt  = build_prompt(context)
-      answer  = Embeddings::GoogleGeminiClient.new.generate(prompt)
+      prompt = build_prompt(context)
+      answer = Embeddings::GoogleGeminiClient.new.generate(prompt)
 
       persist_knowledge(answer) if knowledge_based
 
-      sources = format_sources(sentences).empty? ? "Internet" : format_sources(sentences)
+      sources = format_sources(chunks).empty? ? "Internet" : format_sources(chunks)
 
       {
         answer: answer,
@@ -27,12 +30,23 @@ module Rag
 
     private
 
-    def retrieve_sentences
-      Embeddings::SentenceSearch.new(@query, @search_type, top: @top).call
+    def retrieve_chunks
+      if @search_type == "hybrid"
+        Embeddings::HybridSearch.new(@query, top: @top).call
+      else
+        Embeddings::ChunkSearch.new(@query, @search_type, top: @top).call
+      end
     end
 
-    def build_context(sentences)
-      sentences.map.with_index(1) do |result, i|
+    def rerank(chunks)
+      Reranking::LlmReranker.new(@query, chunks, threshold: @rerank_threshold).call
+    rescue => e
+      Rails.logger.error "[Rag::Query] Reranking error: #{e.message}"
+      chunks
+    end
+
+    def build_context(chunks)
+      chunks.map.with_index(1) do |result, i|
         "[#{i}] #{result[:content]}"
       end.join("\n\n")
     end
@@ -56,15 +70,15 @@ module Rag
       end
     end
 
-    def format_sources(sentences)
-      sentences.map do |result|
+    def format_sources(chunks)
+      chunks.map do |result|
         {
-          content:     result[:content],
-          score:       result[:score],
+          content: result[:content],
+          score: result[:score],
           document_id: result[:document_id],
-          chunk_id:    result[:chunk_id],
-          start_char:  result[:start_char],
-          end_char:    result[:end_char]
+          chunk_id: result[:chunk_id],
+          start_char: result[:start_char],
+          end_char: result[:end_char]
         }
       end
     end
