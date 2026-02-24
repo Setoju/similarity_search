@@ -16,10 +16,14 @@ class DocumentsController < ApplicationController
     render json: results.map { |doc| { content: doc.content } }
   end
 
-  def sentence_search
+  def chunk_search
     query = params[:query]
     search_type = params[:search_type]&.to_s&.downcase || "cosine"
-    results = Embeddings::SentenceSearch.new(query, search_type).call
+    results = if search_type == "hybrid"
+      Embeddings::HybridSearch.new(query).call
+    else
+      Embeddings::ChunkSearch.new(query, search_type).call
+    end
     render json: results.map { |result|
       {
         content: result[:content],
@@ -35,8 +39,15 @@ class DocumentsController < ApplicationController
   def rag
     query = params[:query]
     search_type = params[:search_type]&.to_s&.downcase || "cosine"
+    rerank = ActiveModel::Type::Boolean.new.cast(params[:rerank]) || false
+    rerank_threshold = params[:rerank_threshold]&.to_i || Reranking::LlmReranker::DEFAULT_THRESHOLD
 
-    result = Rag::Query.new(query, search_type: search_type).call
+    result = Rag::Query.new(
+      query,
+      search_type: search_type,
+      rerank: rerank,
+      rerank_threshold: rerank_threshold
+    ).call
     render json: result
   rescue RuntimeError => e
     render json: { error: e.message }, status: :unprocessable_entity
