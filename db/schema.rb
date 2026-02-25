@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_02_24_074743) do
+ActiveRecord::Schema[8.0].define(version: 2026_02_25_000001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -21,6 +21,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_24_074743) do
     t.float "embedding", null: false, array: true
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.text "context"
     t.index ["document_id"], name: "index_chunks_on_document_id"
   end
 
