@@ -1,7 +1,7 @@
 module Preprocessing
   class Chunker
     DEFAULT_CHUNK_SIZE = 500
-    DEFAULT_OVERLAP = 50
+    DEFAULT_OVERLAP = 1  # number of sentences to overlap between chunks
 
     def initialize(text, chunk_size: DEFAULT_CHUNK_SIZE, overlap: DEFAULT_OVERLAP)
       @text = text
@@ -12,40 +12,65 @@ module Preprocessing
     def call
       return [] if @text.blank?
 
-      chunks = []
-      start_char = 0
+      sentences = segment_sentences
+      return [] if sentences.empty?
 
-      while start_char < @text.length
-        end_char = [start_char + @chunk_size, @text.length].min
-
-        # Try to break at word boundary if not at the end
-        if end_char < @text.length
-          # Look for the last space within the chunk
-          last_space = @text.rindex(/\s/, end_char)
-          if last_space && last_space > start_char
-            end_char = last_space
-          end
-        end
-
-        chunks << {
-          start_char: start_char,
-          end_char: end_char,
-          content: @text[start_char...end_char]
-        }
-
-        # Move start position, accounting for overlap
-        start_char = end_char - @overlap
-        start_char = end_char if start_char >= @text.length - @overlap
-
-        # Prevent infinite loop
-        break if start_char >= @text.length
-      end
-
-      chunks
+      build_chunks(sentences)
     end
 
     def self.call(text, **options)
       new(text, **options).call
+    end
+
+    private
+
+    def segment_sentences
+      raw_sentences = PragmaticSegmenter::Segmenter.new(text: @text).segment
+      return [] if raw_sentences.empty?
+
+      mapped = []
+      search_from = 0
+
+      raw_sentences.each do |sentence|
+        stripped = sentence.strip
+        idx = @text.index(stripped, search_from)
+        next unless idx
+
+        mapped << { content: stripped, start_char: idx, end_char: idx + stripped.length }
+        search_from = idx + stripped.length
+      end
+
+      mapped
+    end
+
+    def build_chunks(sentences)
+      chunks = []
+      group = []
+      group_length = 0
+
+      sentences.each do |sentence|
+        candidate_length = group_length + (group.empty? ? 0 : 1) + sentence[:content].length
+
+        if group.any? && candidate_length > @chunk_size
+          chunks << flush_group(group)
+          group = group.last(@overlap)
+          group_length = group.map { |s| s[:content].length }.sum + [group.length - 1, 0].max
+        end
+
+        group << sentence
+        group_length = group.map { |s| s[:content].length }.sum + [group.length - 1, 0].max
+      end
+
+      chunks << flush_group(group) if group.any?
+      chunks
+    end
+
+    def flush_group(group)
+      {
+        start_char: group.first[:start_char],
+        end_char: group.last[:end_char],
+        content: group.map { |s| s[:content] }.join(" ")
+      }
     end
   end
 end
