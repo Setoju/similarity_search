@@ -12,7 +12,7 @@ class DocumentEmbeddingJob < ApplicationJob
 
       create_document_embedding(document, client)
 
-      chunks = create_chunks(document, client)
+      create_chunks(document, client)
 
       document.update!(index_status: "completed")
     rescue StandardError => e
@@ -38,21 +38,23 @@ class DocumentEmbeddingJob < ApplicationJob
 
   def create_chunks(document, client)
     chunk_data = Preprocessing::Chunker.call(document.content)
-    created_chunks = []
+    return [] if chunk_data.empty?
+
+    # Context generation for each chunk
+    chunk_data = ContextualRetrieval::ChunkContextualizer.call(document.content, chunk_data)
 
     chunk_data.each do |chunk_info|
-      normalized_content = Preprocessing::Normalizer.call(chunk_info[:content])
+      contextualized = chunk_info[:context].present? ? "#{chunk_info[:context]} #{chunk_info[:content]}" : chunk_info[:content]
+
+      normalized_content = Preprocessing::Normalizer.call(contextualized)
       embedding = client.embed(normalized_content)
 
       chunk = document.chunks.create!(
         start_char: chunk_info[:start_char],
         end_char: chunk_info[:end_char],
+        context: chunk_info[:context],
         embedding: embedding
       )
-
-      created_chunks << { chunk: chunk, content: chunk_info[:content] }
     end
-
-    created_chunks
   end
 end
