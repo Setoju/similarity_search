@@ -44,7 +44,7 @@ module Embeddings
 
     def build_result(chunk, score)
       {
-        content: chunk.content,
+        content: chunk.contextualized_content,
         score: score,
         document_id: chunk.document_id,
         chunk_id: chunk.id,

@@ -68,7 +68,7 @@ module Embeddings
 
     def compute_bm25_scores(chunks)
       corpus = chunks.each_with_index.map do |chunk, idx|
-        { id: idx, text: chunk.content }
+        { id: idx, text: chunk.contextualized_content }
       end
 
       index = Bm25::Index.new(corpus)
@@ -95,7 +95,7 @@ module Embeddings
     def build_result(r)
       chunk = r[:chunk]
       {
-        content: chunk.content,
+        content: chunk.contextualized_content,
         score: r[:score],
         document_id: chunk.document_id,
         chunk_id: chunk.id,
