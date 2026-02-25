@@ -5,6 +5,7 @@ module Embeddings
   class GoogleGeminiClient
     BASE_URL = "https://generativelanguage.googleapis.com"
     MODEL = "gemma-3-1b-it"
+    CACHE_MODEL = "gemini-2.0-flash-lite"
 
     def initialize
       api_key = ENV.fetch("GOOGLE_API_KEY") { raise "GOOGLE_API_KEY environment variable is not set" }
@@ -39,6 +40,55 @@ module Embeddings
       raise "Google Gemini request timed out."
     rescue Faraday::ConnectionFailed
       raise "Cannot connect to Google Gemini API."
+    end
+
+    # Uploads +text+ as cached content so it can be referenced by many
+    # subsequent generate calls without re-sending the payload each time.
+    # Returns the cache resource name (e.g. "cachedContents/abc123").
+    # ttl (time-to-live) is cache duration
+    def create_cached_content(text, ttl: "300s")
+      response = @conn.post("/v1beta/cachedContents") do |req|
+        req.headers["Content-Type"] = "application/json"
+        req.body = {
+          model: "models/#{CACHE_MODEL}",
+          contents: [
+            { role: "user",  parts: [{ text: text }] },
+            { role: "model", parts: [{ text: "Document loaded. Ready to provide context for chunks." }] }
+          ],
+          ttl: ttl
+        }.to_json
+      end
+
+      parsed = JSON.parse(response.body)
+      parsed["name"] || raise("Failed to create cached content: #{parsed}")
+    rescue Faraday::ClientError => e
+      body = JSON.parse(e.response[:body]) rescue {}
+      raise "Google Gemini cache error: #{body.dig('error', 'message') || e.message}"
+    end
+
+    # Generates content using a previously created cached-content resource.
+    def generate_with_cache(cached_content_name, prompt)
+      response = @conn.post("/v1beta/models/#{CACHE_MODEL}:generateContent") do |req|
+        req.headers["Content-Type"] = "application/json"
+        req.body = {
+          cachedContent: cached_content_name,
+          contents: [
+            { role: "user", parts: [{ text: prompt }] }
+          ]
+        }.to_json
+      end
+
+      parse_response(response)
+    rescue Faraday::ClientError => e
+      body = JSON.parse(e.response[:body]) rescue {}
+      raise "Google Gemini API error: #{body.dig('error', 'message') || e.message}"
+    end
+
+    # Deletes a cached-content resource. Fails silently on errors.
+    def delete_cached_content(name)
+      @conn.delete("/v1beta/#{name}")
+    rescue => e
+      Rails.logger.warn "[GoogleGeminiClient] Failed to delete cached content '#{name}': #{e.message}"
     end
 
     private
