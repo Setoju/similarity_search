@@ -9,6 +9,9 @@ require "rails/test_help"
 require "webmock/minitest"
 
 GEMINI_URL = /generativelanguage\.googleapis\.com\/v1beta\/models\/gemma-3-1b-it:generateContent/
+GEMINI_CACHE_URL = /generativelanguage\.googleapis\.com\/v1beta\/cachedContents/
+GEMINI_CACHE_MODEL_URL = /generativelanguage\.googleapis\.com\/v1beta\/models\/gemini-2.0-flash-lite:generateContent/
+GEMINI_CACHE_DELETE_URL = /generativelanguage\.googleapis\.com\/v1beta\/cachedContents/
 
 module ActiveSupport
   class TestCase
@@ -33,6 +36,23 @@ module ActiveSupport
       body = { candidates: [{ content: { parts: [{ text: text }] } }] }.to_json
       stub_request(:post, GEMINI_URL)
         .to_return(status: 200, body: body, headers: { "Content-Type" => "application/json" })
+    end
+
+    # Stubs the full Gemini cached-content lifecycle used by contextual retrieval.
+    def stub_gemini_cache(context_text: "This chunk provides context.", cache_name: "cachedContents/test-cache-123")
+      stub_request(:post, GEMINI_CACHE_URL)
+        .to_return(
+          status: 200,
+          body: { name: cache_name }.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+
+      body = { candidates: [{ content: { parts: [{ text: context_text }] } }] }.to_json
+      stub_request(:post, GEMINI_CACHE_MODEL_URL)
+        .to_return(status: 200, body: body, headers: { "Content-Type" => "application/json" })
+
+      stub_request(:delete, GEMINI_CACHE_DELETE_URL)
+        .to_return(status: 200, body: "", headers: {})
     end
 
     # Creates a Document with a single Chunk spanning the full content.
