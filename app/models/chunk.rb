@@ -7,4 +7,12 @@ class Chunk < ApplicationRecord
   def content
     document.content[start_char...end_char]
   end
+
+  def contextualized_content
+    if context.present?
+      "#{context} #{content}"
+    else
+      content
+    end
+  end
 end
