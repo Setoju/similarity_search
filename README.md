@@ -9,15 +9,19 @@ A Ruby on Rails application for semantic document storage and similarity search 
 - **Hierarchical Sentence Search**: Three-level search that finds the best document, then best chunk, then best sentences
 - **Background Processing**: Document embedding via async jobs with index status tracking
 - **Text Chunking**: Automatic splitting of documents into overlapping chunks
+- **Contextual Chunk Enrichment**: Each chunk is enriched with a short (1–2 sentence) AI-generated description that situates it within the full document before embedding — improving retrieval precision for out-of-context fragments
 - **Sentence Segmentation**: Language-aware sentence detection using pragmatic_segmenter
 - **Text Preprocessing**: Automatic text normalization before embedding generation
 - **RESTful API**: Clean REST endpoints for all operations
 - **Ollama Integration**: Uses Ollama with nomic-embed-text model for embedding generation
 - **PostgreSQL Storage**: Efficient storage of documents and vector embeddings
+- **BM25 Lexical Search**: Okapi BM25 keyword ranking complements semantic search for precise term matching
+- **Hybrid Search**: Weighted combination of semantic (vector) and BM25 lexical scores, configurable via the `alpha` parameter
+- **LLM Reranking**: Optional listwise reranking of retrieved chunks by Google Gemini (0–10 relevance scores) to maximise answer quality before feeding context to RAG
 - **RAG (Retrieval-Augmented Generation)**: Answers user questions using retrieved context; falls back to Google Gemini's own knowledge when no similar content exists
 - **Automatic Knowledge Persistence**: When Gemini answers from its own knowledge (no matching documents found), the Q&A pair is automatically saved as a new document and scheduled for embedding — making it available as context for future identical queries
 - **Deduplication Guard**: Concurrent or repeated identical queries only ever produce one persisted document; a cache lock (1-hour TTL) combined with a DB existence check prevents duplicates even while the embedding pipeline is still running
-- **Configurable Similarity Metrics**: Choose between cosine similarity (default) and Euclidean distance on every search endpoint via the `search_type` parameter
+- **Configurable Similarity Metrics**: Choose between cosine similarity (default), Euclidean distance, or hybrid search on every search endpoint via the `search_type` parameter
 
 ## Prerequisites
 
@@ -117,6 +121,34 @@ Content-Type: application/json
 }
 ```
 
+#### Chunk Search
+
+Searches at the **chunk level** across all indexed documents. Supports cosine, Euclidean, and hybrid search via the `search_type` parameter.
+
+```bash
+POST /documents/chunk_search
+Content-Type: application/json
+
+{
+  "query": "search query text",
+  "search_type": "hybrid"
+}
+```
+
+Response:
+```json
+[
+  {
+    "content": "The matching chunk text (with prepended context if available).",
+    "score": 0.87,
+    "document_id": 2,
+    "chunk_id": 5,
+    "start_char": 300,
+    "end_char": 650
+  }
+]
+```
+
 #### Sentence Search (Hierarchical)
 
 Performs a three-level hierarchical search:
@@ -171,15 +203,26 @@ Response:
 
 Answers a natural-language question using the stored documents as context. If no sufficiently similar content is found, Google Gemini answers from its own knowledge and the Q&A pair is automatically persisted as a new document for future use.
 
+Supports optional **LLM reranking**: when `rerank` is `true`, retrieved chunks are scored by Gemini (0–10) and filtered by `rerank_threshold` before being used as context.
+
 ```bash
 POST /documents/rag
 Content-Type: application/json
 
 {
   "query": "What is the capital of France?",
-  "search_type": "cosine"
+  "search_type": "hybrid",
+  "rerank": true,
+  "rerank_threshold": 5
 }
 ```
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `query` | string | *(required)* | Natural-language question |
+| `search_type` | string | `cosine` | `cosine`, `euclidean`, or `hybrid` |
+| `rerank` | boolean | `false` | Enable LLM reranking of retrieved chunks |
+| `rerank_threshold` | integer | `5` | Minimum Gemini relevance score (0–10) to keep a chunk |
 
 Response when context is found:
 ```json
@@ -210,17 +253,18 @@ Response when no context is found (model knowledge used):
 
 #### Similarity metric
 
-All search endpoints (`/search`, `/sentence_search`, `/rag`) accept an optional `search_type` parameter:
+All search endpoints (`/search`, `/chunk_search`, `/rag`) accept an optional `search_type` parameter:
 
 | Value | Algorithm | Notes |
 |---|---|---|
 | `cosine` *(default)* | Cosine similarity | Best for comparing directions; scale-invariant |
 | `euclidean` | Euclidean distance (inverted) | Considers magnitude; may suit shorter texts |
+| `hybrid` | Weighted semantic + BM25 | `alpha * cosine + (1 - alpha) * bm25`; best of both worlds |
 
 ```bash
-# Example: use Euclidean distance
-POST /documents/sentence_search
-{ "query": "machine learning basics", "search_type": "euclidean" }
+# Example: hybrid search
+POST /documents/chunk_search
+{ "query": "machine learning basics", "search_type": "hybrid" }
 ```
 
 #### Clear all documents
@@ -241,7 +285,8 @@ DELETE /documents/clear
 - **Chunk**: Text segments within a document
   - `document_id`: Reference to parent document
   - `start_char`, `end_char`: Character positions in original document
-  - `embedding`: Float array for chunk's semantic embedding
+  - `context`: AI-generated 1–2 sentence description situating the chunk within the document
+  - `embedding`: Float array for chunk's semantic embedding (generated from `context + content`)
 
 - **Sentence**: Individual sentences within chunks
   - `document_id`: Reference to parent document
@@ -253,24 +298,32 @@ DELETE /documents/clear
 
 - **Embeddings::DocumentEmbedding**: Generates embeddings for documents
 - **Embeddings::OllamaClient**: Interface to Ollama embedding API
-- **Embeddings::GoogleGeminiClient**: Interface to Google Gemini API for text generation
+- **Embeddings::GoogleGeminiClient**: Interface to Google Gemini API for text generation and cached-content prompting
 - **Embeddings::DocumentSearch**: Performs semantic search across documents
+- **Embeddings::ChunkSearch**: Semantic search at chunk level using cosine or Euclidean similarity
+- **Embeddings::HybridSearch**: Combines cosine semantic scores with BM25 lexical scores (`hybrid_score = alpha * norm_semantic + (1 - alpha) * norm_bm25`; default `alpha` = 0.7); deduplicates results before returning
 - **Embeddings::SentenceSearch**: Hierarchical search (document → chunk → sentence)
+- **ContextualRetrieval::ChunkContextualizer**: Enriches each chunk with a 1–2 sentence AI context using Gemini's cached-content API (falls back to per-chunk direct prompts for small documents)
+- **Bm25::Index**: Okapi BM25 ranking index with configurable `k1` and `b` parameters
+- **Bm25::Tokenizer**: Lowercasing, punctuation removal, and stop-word filtering for BM25 indexing
+- **Reranking::LlmReranker**: Listwise LLM reranker — sends all candidates to Gemini in one round-trip, receives a relevance score (0–10) per passage, filters by threshold, and sorts by descending score; degrades gracefully on errors
 - **Preprocessing::Normalizer**: Text preprocessing and normalization
 - **Preprocessing::Chunker**: Splits documents into overlapping chunks
 - **Preprocessing::Sentencer**: Language-aware sentence segmentation
 - **Similarity::Cosine**: Calculates cosine similarity between vectors
 - **Similarity::Euclidean**: Calculates Euclidean distance between vectors
 - **Similarity::Resolver**: Selects the correct similarity calculator based on the `search_type` parameter
-- **Rag::Query**: Orchestrates the full RAG pipeline — retrieves context, calls Gemini, and persists knowledge-based answers
+- **Rag::Query**: Orchestrates the full RAG pipeline — retrieves context (cosine, Euclidean, or hybrid), optionally reranks with `Reranking::LlmReranker`, calls Gemini, and persists knowledge-based answers
 
 ### Jobs
 
 - **DocumentEmbeddingJob**: Background job that processes documents:
   1. Generates document-level embedding
-  2. Splits document into chunks and generates chunk embeddings
-  3. Segments chunks into sentences and generates sentence embeddings
-  4. Updates document index_status on completion
+  2. Splits document into chunks via `Preprocessing::Chunker`
+  3. Enriches each chunk with an AI-generated context description via `ContextualRetrieval::ChunkContextualizer` (uses Gemini cached-content API; falls back to direct prompts for small documents)
+  4. Embeds each chunk using the combined `context + content` text
+  5. Segments chunks into sentences and generates sentence embeddings
+  6. Updates document `index_status` on completion
 
 ### Controllers
 
