@@ -1,6 +1,20 @@
 class DocumentsController < ApplicationController
   def index
-    documents = Document.all
+    documents = Document.all.includes(:chunks).map do |doc|
+      {
+        id: doc.id,
+        content: doc.content,
+        index_status: doc.index_status,
+        chunks: doc.chunks.map { |chunk|
+          {
+            id: chunk.id,
+            content: doc.content.slice(chunk.start_char, chunk.end_char - chunk.start_char),
+            start_char: chunk.start_char,
+            end_char: chunk.end_char
+          }
+        }
+      }
+    end
     render json: documents
   end
   
