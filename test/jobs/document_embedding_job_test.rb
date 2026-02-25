@@ -3,7 +3,13 @@ require "test_helper"
 class DocumentEmbeddingJobTest < ActiveJob::TestCase
   setup do
     @sample_embedding = Array.new(768) { rand(-1.0..1.0) }
+    ENV["GOOGLE_API_KEY"] = "test-api-key"
     stub_connection
+    stub_gemini_cache
+  end
+
+  teardown do
+    ENV.delete("GOOGLE_API_KEY")
   end
 
   test "enqueues and performs job successfully" do
