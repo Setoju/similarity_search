@@ -1,0 +1,196 @@
+---
+lectures:
+  - id: algorithms
+    file: algorithms_lecture.txt
+    source: "Based on MIT OpenCourseWare - Introduction to Algorithms (6.006)"
+    questions:
+      - question: "What is the time complexity of bubble sort?"
+        expected_answer: "Bubble sort has a worst-case and average time complexity of O(n squared)."
+        expected_keywords:
+          - "O(n squared)"
+          - "quadratic"
+          - "n squared"
+        topic: "bubble sort"
+
+      - question: "Who invented merge sort and when?"
+        expected_answer: "Merge sort was invented by John von Neumann in 1945."
+        expected_keywords:
+          - "John von Neumann"
+          - "1945"
+        topic: "merge sort"
+
+      - question: "What is the worst-case time complexity of quick sort?"
+        expected_answer: "Quick sort has a worst-case time complexity of O(n squared), which occurs when the pivot selection is poor."
+        expected_keywords:
+          - "O(n squared)"
+          - "pivot"
+          - "worst"
+        topic: "quick sort"
+
+      - question: "What is the advantage of merge sort over bubble sort?"
+        expected_answer: "Merge sort has O(n log n) time complexity in all cases, making it more efficient than bubble sort for large datasets."
+        expected_keywords:
+          - "O(n log n)"
+          - "efficient"
+          - "large"
+        topic: "merge sort"
+
+      - question: "What is the average time complexity of hash table operations?"
+        expected_answer: "Hash tables provide O(1) average time complexity for insertions, deletions, and lookups."
+        expected_keywords:
+          - "O(1)"
+          - "constant"
+          - "average"
+        topic: "hash tables"
+
+      - question: "What is binary search and what is its requirement?"
+        expected_answer: "Binary search is an efficient algorithm for finding an item from a sorted list with O(log n) time complexity. It requires that the data be sorted beforehand."
+        expected_keywords:
+          - "sorted"
+          - "O(log n)"
+          - "divide"
+        topic: "binary search"
+
+      - question: "What are common collision resolution strategies in hash tables?"
+        expected_answer: "Common collision resolution strategies include chaining, where each bucket contains a linked list of entries, and open addressing, where the algorithm probes for the next available slot."
+        expected_keywords:
+          - "chaining"
+          - "open addressing"
+          - "collision"
+        topic: "hash tables"
+
+  - id: machine_learning
+    file: machine_learning_lecture.txt
+    source: "Based on Stanford CS229 - Machine Learning"
+    questions:
+      - question: "What is the difference between supervised and unsupervised learning?"
+        expected_answer: "Supervised learning trains on labeled data with input-output pairs, while unsupervised learning works with unlabeled data and must find patterns without guidance from output labels."
+        expected_keywords:
+          - "labeled"
+          - "unlabeled"
+          - "supervised"
+          - "unsupervised"
+        topic: "types of learning"
+
+      - question: "What is gradient descent used for?"
+        expected_answer: "Gradient descent is an optimization algorithm used to minimize the cost function in machine learning models by iteratively adjusting parameters in the direction of steepest descent."
+        expected_keywords:
+          - "optimization"
+          - "cost function"
+          - "minimize"
+          - "iteratively"
+        topic: "gradient descent"
+
+      - question: "What is overfitting in machine learning?"
+        expected_answer: "Overfitting occurs when a model learns the training data too well, including its noise and outliers, resulting in poor performance on new unseen data."
+        expected_keywords:
+          - "training data"
+          - "noise"
+          - "poor performance"
+          - "unseen"
+        topic: "overfitting"
+
+      - question: "What is the equation for linear regression?"
+        expected_answer: "The linear regression equation takes the form y equals w times x plus b, where w is the weight (slope) and b is the bias (intercept)."
+        expected_keywords:
+          - "y"
+          - "w"
+          - "x"
+          - "b"
+          - "weight"
+          - "bias"
+        topic: "linear regression"
+
+      - question: "What is the difference between L1 and L2 regularization?"
+        expected_answer: "L1 regularization (Lasso) adds the absolute value of weights as a penalty and can drive weights to zero for feature selection. L2 regularization (Ridge) adds the squared magnitude of weights and distributes values more evenly."
+        expected_keywords:
+          - "L1"
+          - "L2"
+          - "Lasso"
+          - "Ridge"
+          - "penalty"
+        topic: "regularization"
+
+      - question: "Who pioneered the field of machine learning?"
+        expected_answer: "Arthur Samuel pioneered the field of machine learning in 1959."
+        expected_keywords:
+          - "Arthur Samuel"
+          - "1959"
+        topic: "history"
+
+      - question: "What are common activation functions in neural networks?"
+        expected_answer: "Common activation functions include ReLU (Rectified Linear Unit), sigmoid, and tanh."
+        expected_keywords:
+          - "ReLU"
+          - "sigmoid"
+          - "tanh"
+          - "activation"
+        topic: "neural networks"
+
+  - id: operating_systems
+    file: operating_systems_lecture.txt
+    source: "Based on UC Berkeley CS162 - Operating Systems"
+    questions:
+      - question: "What is the difference between a process and a thread?"
+        expected_answer: "A process is an instance of a program with its own address space. A thread is the smallest unit of execution within a process. Multiple threads share the same address space but have their own stack and program counter."
+        expected_keywords:
+          - "address space"
+          - "thread"
+          - "process"
+          - "stack"
+          - "share"
+        topic: "processes and threads"
+
+      - question: "What is virtual memory?"
+        expected_answer: "Virtual memory allows processes to use more memory than is physically available by using disk space as an extension of RAM. When a process accesses a page not in memory, a page fault occurs."
+        expected_keywords:
+          - "disk"
+          - "RAM"
+          - "page fault"
+          - "physical"
+        topic: "virtual memory"
+
+      - question: "What are the four conditions for deadlock?"
+        expected_answer: "The four conditions for deadlock are mutual exclusion, hold and wait, no preemption, and circular wait."
+        expected_keywords:
+          - "mutual exclusion"
+          - "hold and wait"
+          - "no preemption"
+          - "circular wait"
+        topic: "deadlocks"
+
+      - question: "What is the Round Robin scheduling algorithm?"
+        expected_answer: "Round Robin assigns each process a fixed time quantum and cycles through the ready queue. When a process's time quantum expires, it is moved to the back of the queue."
+        expected_keywords:
+          - "time quantum"
+          - "round robin"
+          - "queue"
+          - "cycle"
+        topic: "cpu scheduling"
+
+      - question: "What is the Shortest Job First scheduling algorithm?"
+        expected_answer: "Shortest Job First (SJF) selects the process with the smallest execution time. It is optimal for minimizing average waiting time but requires knowledge of future execution times."
+        expected_keywords:
+          - "shortest"
+          - "execution time"
+          - "optimal"
+          - "waiting time"
+        topic: "cpu scheduling"
+
+      - question: "How does paging solve the fragmentation problem?"
+        expected_answer: "Paging solves fractioning by dividing physical memory into fixed-size frames and logical memory into pages of the same size. The page table maps logical pages to physical frames."
+        expected_keywords:
+          - "frames"
+          - "pages"
+          - "page table"
+          - "fixed-size"
+        topic: "memory management"
+
+      - question: "What is the Banker's algorithm used for?"
+        expected_answer: "The Banker's algorithm is used for deadlock avoidance. It ensures the system never enters an unsafe state by checking if granting a resource request would leave the system in a safe state."
+        expected_keywords:
+          - "deadlock"
+          - "avoidance"
+          - "unsafe state"
+          - "Banker"
+        topic: "deadlocks"

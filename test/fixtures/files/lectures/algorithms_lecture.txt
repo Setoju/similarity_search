@@ -1,0 +1,31 @@
+Introduction to Sorting Algorithms
+
+Sorting is one of the most fundamental problems in computer science. A sorting algorithm arranges elements of a list in a certain order, most commonly numerical or lexicographical. Efficient sorting is important because it optimizes the efficiency of other algorithms that require sorted input data.
+
+Bubble Sort
+
+Bubble sort is the simplest sorting algorithm. It works by repeatedly stepping through the list, comparing adjacent elements, and swapping them if they are in the wrong order. The pass through the list is repeated until the list is sorted. The algorithm gets its name because smaller elements bubble to the top of the list. Bubble sort has a worst-case and average time complexity of O(n squared), where n is the number of items being sorted. Despite its simplicity, bubble sort is inefficient for large datasets and is primarily used as an educational tool.
+
+Merge Sort
+
+Merge sort is a divide-and-conquer algorithm invented by John von Neumann in 1945. It divides the unsorted list into n sublists, each containing one element, and then repeatedly merges sublists to produce new sorted sublists until there is only one sublist remaining. The key operation is the merge step, which combines two sorted lists into a single sorted list in linear time. Merge sort has a time complexity of O(n log n) in all cases: best, average, and worst. This makes it more efficient than bubble sort for large datasets. Merge sort requires O(n) additional space for the temporary arrays used during merging, which is a disadvantage compared to in-place sorting algorithms.
+
+Quick Sort
+
+Quick sort is another divide-and-conquer algorithm developed by Tony Hoare in 1959. It works by selecting a pivot element from the array and partitioning the other elements into two sub-arrays according to whether they are less than or greater than the pivot. The sub-arrays are then sorted recursively. Quick sort has an average time complexity of O(n log n), but its worst-case time complexity is O(n squared), which occurs when the pivot selection is poor, such as always choosing the first or last element of an already sorted array. Despite its worst case, quick sort is often faster in practice than merge sort because of its good cache performance and low overhead. Quick sort can be implemented as an in-place algorithm, requiring only O(log n) additional space for the recursive call stack.
+
+Binary Search
+
+Binary search is an efficient algorithm for finding an item from a sorted list of items. It works by repeatedly dividing in half the portion of the list that could contain the item, until you narrow down the possible locations to just one. Binary search has a time complexity of O(log n), making it much faster than linear search for large datasets. However, binary search requires that the data be sorted beforehand. If the data is unsorted, you must first sort it, which takes at least O(n log n) time with an efficient sorting algorithm.
+
+Hash Tables
+
+A hash table is a data structure that implements an associative array, mapping keys to values. It uses a hash function to compute an index into an array of buckets, from which the desired value can be found. Hash tables provide O(1) average time complexity for insertions, deletions, and lookups. However, in the worst case, when many keys hash to the same bucket (called a collision), the time complexity can degrade to O(n). Common collision resolution strategies include chaining, where each bucket contains a linked list of entries, and open addressing, where the algorithm probes for the next available slot.
+
+Big O Notation
+
+Big O notation is a mathematical notation used to describe the upper bound of an algorithm's time complexity. It characterizes functions according to their growth rates. Common time complexities include O(1) for constant time, O(log n) for logarithmic time, O(n) for linear time, O(n log n) for linearithmic time, O(n squared) for quadratic time, and O(2 to the power of n) for exponential time. Understanding Big O notation is essential for analyzing and comparing the efficiency of algorithms.
+
+Summary
+
+Choosing the right sorting algorithm depends on the specific requirements of the application. For small datasets, simpler algorithms like bubble sort may be adequate. For larger datasets, merge sort provides guaranteed O(n log n) performance, while quick sort offers excellent average-case performance with lower memory overhead. Understanding time complexity through Big O notation helps developers make informed decisions about algorithm selection.

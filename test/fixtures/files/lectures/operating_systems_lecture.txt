@@ -1,0 +1,35 @@
+Introduction to Operating Systems
+
+An operating system is system software that manages computer hardware and software resources and provides common services for computer programs. The operating system acts as an intermediary between users and the computer hardware. Major functions include process management, memory management, file system management, and device management. Examples of modern operating systems include Linux, Windows, and macOS.
+
+Processes and Threads
+
+A process is an instance of a program in execution. Each process has its own address space, which includes the code segment, data segment, heap, and stack. The operating system maintains a Process Control Block (PCB) for each process, which contains information such as the process state, program counter, CPU registers, and memory management information. Processes can be in one of several states: new, ready, running, waiting, or terminated.
+
+A thread is the smallest unit of execution within a process. Multiple threads within the same process share the same address space and resources, but each thread has its own stack and program counter. Threads are lighter weight than processes because they share memory and resources. This makes thread creation and context switching faster than process creation and context switching. However, because threads share memory, concurrent access to shared data can lead to race conditions, which must be handled using synchronization mechanisms like mutexes, semaphores, and monitors.
+
+CPU Scheduling
+
+CPU scheduling determines which process runs at any given time. The scheduler selects from the processes in the ready queue and allocates the CPU to one of them. First-Come First-Served (FCFS) is the simplest scheduling algorithm, where processes are executed in the order they arrive. However, FCFS can suffer from the convoy effect, where short processes wait behind long processes.
+
+Shortest Job First (SJF) selects the process with the smallest execution time. SJF is optimal in terms of minimizing average waiting time, but it requires knowledge of future execution times, which is often impractical. Round Robin (RR) assigns each process a fixed time quantum and cycles through the ready queue. When a process's time quantum expires, it is moved to the back of the queue. The choice of time quantum is critical: too large and RR degenerates into FCFS, too small and the overhead of context switching becomes significant. Priority scheduling assigns a priority to each process and selects the highest-priority process. This can lead to starvation, where low-priority processes never get to execute, which can be mitigated using aging techniques.
+
+Memory Management
+
+Memory management is responsible for allocating and deallocating memory space as needed. The simplest approach is contiguous memory allocation, where each process is allocated a single contiguous section of memory. This can lead to external fragmentation, where free memory is broken into small, non-contiguous blocks. Paging solves the fragmentation problem by dividing physical memory into fixed-size frames and logical memory into pages of the same size. The page table maps logical pages to physical frames.
+
+Virtual Memory
+
+Virtual memory allows processes to use more memory than is physically available by using disk space as an extension of RAM. When a process accesses a page that is not in physical memory, a page fault occurs, and the operating system loads the required page from disk. The page replacement algorithm determines which page to evict when physical memory is full. Common page replacement algorithms include FIFO (First In First Out), LRU (Least Recently Used), and the optimal algorithm, which replaces the page that will not be used for the longest period. The working set model tracks the set of pages a process is actively using and tries to keep those pages in memory to minimize page faults.
+
+File Systems
+
+A file system organizes and stores data on storage devices. It provides a hierarchical structure of directories and files. Common file systems include ext4 for Linux, NTFS for Windows, and APFS for macOS. The file system manages metadata such as file names, permissions, timestamps, and file size. The inode structure in Unix-based systems stores metadata and pointers to data blocks. File allocation methods include contiguous allocation, linked allocation, and indexed allocation.
+
+Deadlocks
+
+A deadlock occurs when two or more processes are each waiting for the other to release a resource, creating a circular dependency. Four conditions must hold simultaneously for a deadlock to occur: mutual exclusion, hold and wait, no preemption, and circular wait. Deadlock prevention strategies eliminate one of these four conditions. Deadlock avoidance uses algorithms like the Banker's algorithm to ensure the system never enters an unsafe state. Deadlock detection allows deadlocks to occur and then recovers from them by terminating processes or preempting resources.
+
+Summary
+
+Operating systems provide essential services for managing hardware resources and running applications. Processes and threads are fundamental abstractions for executing programs concurrently. CPU scheduling algorithms determine how processor time is allocated. Virtual memory extends physical memory using disk storage. Understanding deadlocks and their prevention is crucial for building reliable concurrent systems.
