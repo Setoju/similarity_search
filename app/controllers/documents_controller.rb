@@ -9,6 +9,7 @@ class DocumentsController < ApplicationController
           {
             id: chunk.id,
             content: doc.content.slice(chunk.start_char, chunk.end_char - chunk.start_char),
+            content_hash: chunk.context,
             start_char: chunk.start_char,
             end_char: chunk.end_char
           }
