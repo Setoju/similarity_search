@@ -4,7 +4,8 @@ require "json"
 module Embeddings
   class GoogleGeminiClient
     BASE_URL = "https://generativelanguage.googleapis.com"
-    MODEL = "gemma-3-1b-it"
+    # gemma-3-27b-it gemma-3-1b-it
+    MODEL = "gemma-3-27b-it"
     CACHE_MODEL = "gemini-2.0-flash-lite"
 
     def initialize
