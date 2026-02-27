@@ -11,14 +11,11 @@ module Rag
     def call
       chunks = retrieve_chunks
       chunks = rerank(chunks) if @rerank && chunks.any?
-      knowledge_based = chunks.empty?
 
-      context = knowledge_based ? "" : build_context(chunks)
+      context = chunks.empty? ? "" : build_context(chunks)
 
       prompt = build_prompt(context)
       answer = Embeddings::GoogleGeminiClient.new.generate(prompt)
-
-      persist_knowledge(answer) if knowledge_based
 
       sources = format_sources(chunks).empty? ? "Internet" : format_sources(chunks)
 
@@ -81,21 +78,6 @@ module Rag
           end_char: result[:end_char]
         }
       end
-    end
-
-    def persist_knowledge(answer)
-      key = knowledge_cache_key
-      return if Rails.cache.exist?(key) || Document.exists?(content: answer)
-
-      Rails.cache.write(key, true, expires_in: 1.hour)
-      Document.create!(content: answer)
-    rescue => e
-      Rails.logger.error "Failed to persist knowledge-based answer: #{e.message}"
-    end
-
-    def knowledge_cache_key
-      normalized = Preprocessing::Normalizer.call(@query)
-      "rag_knowledge:#{Digest::SHA256.hexdigest(normalized)}"
     end
   end
 end
