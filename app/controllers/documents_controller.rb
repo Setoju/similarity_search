@@ -20,6 +20,13 @@ class DocumentsController < ApplicationController
   end
   
   def create
+    content = document_params[:content]
+    guard = Security::PromptGuard.new(content)
+
+    unless guard.safe?
+      return render json: { error: guard.rejection_message }, status: :unprocessable_entity
+    end
+
     document = Document.create!(document_params)
     render json: document
   end
@@ -53,6 +60,12 @@ class DocumentsController < ApplicationController
 
   def rag
     query = params[:query]
+
+    guard = Security::PromptGuard.new(query)
+    unless guard.safe?
+      return render json: { error: guard.rejection_message }, status: :unprocessable_entity
+    end
+
     search_type = params[:search_type]&.to_s&.downcase || "cosine"
     rerank = ActiveModel::Type::Boolean.new.cast(params[:rerank]) || false
     rerank_threshold = params[:rerank_threshold]&.to_i || Reranking::LlmReranker::DEFAULT_THRESHOLD
