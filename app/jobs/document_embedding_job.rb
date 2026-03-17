@@ -37,7 +37,12 @@ class DocumentEmbeddingJob < ApplicationJob
   end
 
   def create_chunks(document, client)
-    chunk_data = Preprocessing::Chunker.call(document.content)
+    chunk_data = Preprocessing::Chunker.call(
+      document.content,
+      overlap: 0,
+      embedding_client: client,
+      semantic_threshold: 0.8
+    )
     return [] if chunk_data.empty?
 
     # Context generation for each chunk

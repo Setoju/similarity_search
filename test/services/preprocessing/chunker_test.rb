@@ -1,6 +1,12 @@
 require "test_helper"
 
 class Preprocessing::ChunkerTest < ActiveSupport::TestCase
+  FakeEmbeddingClient = Struct.new(:vectors) do
+    def embed(text)
+      vectors.fetch(text)
+    end
+  end
+
   test "returns empty array for nil text" do
     assert_equal [], Preprocessing::Chunker.call(nil)
   end
@@ -99,5 +105,49 @@ class Preprocessing::ChunkerTest < ActiveSupport::TestCase
       assert original_slice.present?,
         "Slice from #{chunk[:start_char]}...#{chunk[:end_char]} is empty"
     end
+  end
+
+  test "semantic chunking splits where adjacent similarity drops" do
+    text = "Cats purr softly. Kittens nap nearby. Quantum states collapse. Wave functions interfere."
+
+    vectors = {
+      "cats purr softly." => [1.0, 0.0],
+      "kittens nap nearby." => [0.99, 0.01],
+      "quantum states collapse." => [0.0, 1.0],
+      "wave functions interfere." => [0.01, 0.99]
+    }
+
+    result = Preprocessing::Chunker.call(
+      text,
+      chunk_size: 1_000,
+      overlap: 0,
+      embedding_client: FakeEmbeddingClient.new(vectors),
+      semantic_threshold: 0.8
+    )
+
+    assert_equal 2, result.length
+    assert_equal "Cats purr softly. Kittens nap nearby.", result.first[:content]
+    assert_equal "Quantum states collapse. Wave functions interfere.", result.last[:content]
+  end
+
+  test "semantic chunking keeps one chunk when adjacent similarity stays above threshold" do
+    text = "Alpha starts here. Beta follows closely. Gamma stays aligned."
+
+    vectors = {
+      "alpha starts here." => [1.0, 0.0],
+      "beta follows closely." => [0.98, 0.02],
+      "gamma stays aligned." => [0.97, 0.03]
+    }
+
+    result = Preprocessing::Chunker.call(
+      text,
+      chunk_size: 1_000,
+      overlap: 0,
+      embedding_client: FakeEmbeddingClient.new(vectors),
+      semantic_threshold: 0.8
+    )
+
+    assert_equal 1, result.length
+    assert_equal text, result.first[:content]
   end
 end
