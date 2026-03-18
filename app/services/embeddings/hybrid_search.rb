@@ -21,11 +21,12 @@ module Embeddings
     # 1.0 = pure semantic; 0.0 = pure BM25.
     DEFAULT_ALPHA = 0.7
 
-    def initialize(query, top: 5, threshold: 0.0, alpha: DEFAULT_ALPHA)
+    def initialize(query, top: 5, threshold: 0.0, alpha: DEFAULT_ALPHA, embedding: nil)
       @query = query
       @top = top
       @threshold = threshold
       @alpha = alpha.clamp(0.0, 1.0)
+      @embedding = embedding
     end
 
     def call
@@ -50,6 +51,8 @@ module Embeddings
     private
 
     def embed_query
+      return @embedding if @embedding
+
       Embeddings::OllamaClient.new.embed(Preprocessing::Normalizer.call(@query))
     rescue => e
       Rails.logger.error "[HybridSearch] Failed to embed query: #{e.message}"

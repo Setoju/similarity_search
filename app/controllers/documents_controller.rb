@@ -69,12 +69,16 @@ class DocumentsController < ApplicationController
     search_type = params[:search_type]&.to_s&.downcase || "cosine"
     rerank = ActiveModel::Type::Boolean.new.cast(params[:rerank]) || false
     rerank_threshold = params[:rerank_threshold]&.to_i || Reranking::LlmReranker::DEFAULT_THRESHOLD
+    hyde = ActiveModel::Type::Boolean.new.cast(params[:hyde]) || false
+    decompose = ActiveModel::Type::Boolean.new.cast(params[:decompose]) || false
 
     result = Rag::Query.new(
       query,
       search_type: search_type,
       rerank: rerank,
-      rerank_threshold: rerank_threshold
+      rerank_threshold: rerank_threshold,
+      hyde: hyde,
+      decompose: decompose
     ).call
     render json: result
   rescue RuntimeError => e

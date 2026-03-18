@@ -12,16 +12,16 @@ module Embeddings
   class ChunkSearch
     include Deduplicatable
 
-    def initialize(query, search_type = "cosine", top: 5, threshold: 0.4)
+    def initialize(query, search_type = "cosine", top: 5, threshold: 0.4, embedding: nil)
       @query = query
       @top = top
       @threshold = threshold
+      @embedding = embedding
       @similarity_calculator = Similarity::Resolver.call(search_type)
     end
 
     def call
-      client = Embeddings::OllamaClient.new
-      query_vector = client.embed(Preprocessing::Normalizer.call(@query))
+      query_vector = @embedding || Embeddings::OllamaClient.new.embed(Preprocessing::Normalizer.call(@query))
 
       chunks = Chunk.includes(:document).where.not(embedding: nil)
 
