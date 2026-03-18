@@ -33,6 +33,9 @@ class DocumentsController < ApplicationController
 
   def search
     query = params[:query]
+
+    render json: { error: "Query is flagged as unsafe" }, status: :unprocessable_entity and return unless safe_query?(query)
+
     search_type = params[:search_type]&.to_s&.downcase || "cosine"
     results = Embeddings::DocumentSearch.new(query, search_type).call
     render json: results
@@ -40,6 +43,9 @@ class DocumentsController < ApplicationController
 
   def chunk_search
     query = params[:query]
+
+    render json: { error: "Query is flagged as unsafe" }, status: :unprocessable_entity and return unless safe_query?(query)
+
     search_type = params[:search_type]&.to_s&.downcase || "cosine"
     results = if search_type == "hybrid"
       Embeddings::HybridSearch.new(query).call
@@ -61,10 +67,7 @@ class DocumentsController < ApplicationController
   def rag
     query = params[:query]
 
-    guard = Security::PromptGuard.new(query)
-    unless guard.safe?
-      return render json: { error: guard.rejection_message }, status: :unprocessable_entity
-    end
+    render json: { error: "Query is flagged as unsafe" }, status: :unprocessable_entity and return unless safe_query?(query)
 
     search_type = params[:search_type]&.to_s&.downcase || "cosine"
     rerank = ActiveModel::Type::Boolean.new.cast(params[:rerank]) || false
@@ -108,5 +111,10 @@ class DocumentsController < ApplicationController
 
   def document_params
     params.require(:document).permit(:content)
+  end
+
+  def safe_query?(query)
+    guard = Security::PromptGuard.new(query)
+    guard.safe? && Security::GuardClient.new.call(query) == "safe"
   end
 end
