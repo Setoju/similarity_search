@@ -8,7 +8,7 @@ require_relative "../config/environment"
 require "rails/test_help"
 require "webmock/minitest"
 
-GEMINI_URL = /generativelanguage\.googleapis\.com\/v1beta\/models\/gemma-3-1b-it:generateContent/
+GEMINI_URL = /generativelanguage\.googleapis\.com\/v1beta\/models\/gemma-3-27b-it:generateContent/
 GEMINI_CACHE_URL = /generativelanguage\.googleapis\.com\/v1beta\/cachedContents/
 GEMINI_CACHE_MODEL_URL = /generativelanguage\.googleapis\.com\/v1beta\/models\/gemini-2.0-flash-lite:generateContent/
 GEMINI_CACHE_DELETE_URL = /generativelanguage\.googleapis\.com\/v1beta\/cachedContents/

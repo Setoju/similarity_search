@@ -111,7 +111,7 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
   end
 
   def stub_gemini_success
-    stub_request(:post, "https://generativelanguage.googleapis.com/v1beta/models/gemma-3-1b-it:generateContent?key=#{ENV.fetch("GOOGLE_API_KEY")}")
+    stub_request(:post, "https://generativelanguage.googleapis.com/v1beta/models/gemma-3-27b-it:generateContent?key=#{ENV.fetch("GOOGLE_API_KEY")}")
       .to_return(
         status: 200,
         body: {

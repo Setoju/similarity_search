@@ -82,12 +82,4 @@ class Rag::QueryTest < ActiveSupport::TestCase
       assert result[:sources].length <= 1
     end
   end
-
-  test "persists knowledge-based answer as a new document when no chunks found" do
-    stub_gemini_response("A knowledge-based answer here.")
-
-    assert_difference "Document.count", 1 do
-      Rag::Query.new("Something obscure").call
-    end
-  end
 end

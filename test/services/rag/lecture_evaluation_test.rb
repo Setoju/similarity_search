@@ -317,15 +317,6 @@ class RagEval::LectureEvaluationTest < ActiveSupport::TestCase
       "Token F1 too low (#{(f1_score * 100).round(1)}%) for: #{question.question}"
     assert_operator overall, :>=, 20.0,
       "Overall score too low (#{overall}) for: #{question.question}"
-
-    # Log retrieval quality (soft check — with mocked embeddings, retrieval
-    # precision depends on chunk ordering rather than true semantic relevance)
-    if result[:sources].is_a?(Array) && result[:sources].any?
-      hit = RagEval::Metrics.retrieval_hit?(result[:sources], expected_keywords)
-      unless hit
-        puts "  [WARN] No retrieved chunk contained expected keywords for: #{question.question}"
-      end
-    end
   end
 
   # Ingest a lecture as a document with chunked embeddings
