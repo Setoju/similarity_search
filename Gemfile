@@ -55,7 +55,7 @@ group :development, :test do
   gem "webmock"
 
   # Pin minitest for Rails 8 compatibility
-  gem "minitest", "~> 5.25"
+  gem "minitest", "~> 6.0"
 
   gem "simplecov", require: false
 end
