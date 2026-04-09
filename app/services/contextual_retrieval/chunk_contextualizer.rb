@@ -1,18 +1,25 @@
+require "faraday"
+require "json"
+
 module ContextualRetrieval
   # Generates short contextual descriptions for document chunks using
-  # Google Gemini's cached content API.
+  # Ollama's local generation API.
   #
-  # The full document is uploaded once as cached content so that it is not
-  # re-sent with every per-chunk request. Each chunk then receives a
-  # succinct 1-2 sentence context that situates it within the document,
-  # which is later prepended to improve embedding and search quality.
-  #
-  # If API-level caching fails (e.g. document too small), the service
-  # falls back to including the document directly in each prompt.
+  # Each chunk receives a succinct 1-2 sentence context that situates it
+  # within the source document, which is later prepended to improve
+  # embedding and search quality.
   class ChunkContextualizer
+    BASE_URL = "http://localhost:11434"
+    MODEL = "gemma3:1b"
+
     def initialize(document_content, chunks)
       @document_content = document_content
       @chunks = chunks
+      @conn = Faraday.new(url: BASE_URL) do |f|
+        f.request :json
+        f.adapter Faraday.default_adapter
+        f.response :raise_error
+      end
     end
 
     def self.call(document_content, chunks)
@@ -22,33 +29,14 @@ module ContextualRetrieval
     def call
       return @chunks if @chunks.empty?
 
-      gemini = Embeddings::GoogleGeminiClient.new
-      cache_name = nil
-
-      # Content under 4k tokens will fail caching because it's too small to be worth caching, so we rescue and fall back to direct generation in that case.
-      begin
-        cache_name = gemini.create_cached_content(cache_body)
-        contextualize_with_cache(gemini, cache_name)
-      rescue => e
-        Rails.logger.warn "[ChunkContextualizer] Cached generation failed (#{e.message}), falling back to direct prompts"
-        contextualize_directly(gemini)
-      ensure
-        gemini.delete_cached_content(cache_name) if cache_name
-      end
+      contextualize_with_ollama
     end
 
     private
 
-    def contextualize_with_cache(gemini, cache_name)
+    def contextualize_with_ollama
       @chunks.map do |chunk|
-        context = gemini.generate_with_cache(cache_name, chunk_prompt(chunk[:content]))
-        chunk.merge(context: context.strip)
-      end
-    end
-
-    def contextualize_directly(gemini)
-      @chunks.map do |chunk|
-        context = gemini.generate(direct_prompt(chunk[:content]))
+        context = generate_context(prompt_for(chunk[:content]))
         chunk.merge(context: context.strip)
       rescue => e
         Rails.logger.warn "[ChunkContextualizer] Skipping context for chunk: #{e.message}"
@@ -56,41 +44,60 @@ module ContextualRetrieval
       end
     end
 
-    def cache_body
-      <<~TEXT.strip
+    def generate_context(prompt)
+      response = @conn.post("/api/generate") do |req|
+        req.body = {
+          model: MODEL,
+          prompt: prompt,
+          stream: false,
+          temperature: 0.2,
+          num_predict: 120,
+          keep_alive: 600
+        }.to_json
+        req.headers["Content-Type"] = "application/json"
+      end
+
+      parse_response(response)
+    rescue Faraday::ClientError => e
+      body = JSON.parse(e.response[:body]) rescue {}
+      raise "Ollama error: #{body['error'] || e.message}"
+    rescue Faraday::TimeoutError
+      raise "Ollama request timed out. Model might be loading - try again in a moment."
+    rescue Faraday::ConnectionFailed
+      raise "Cannot connect to Ollama. Make sure it's running: ollama serve"
+    end
+
+    def parse_response(response)
+      parsed = JSON.parse(response.body)
+
+      if parsed["response"].is_a?(String)
+        parsed["response"]
+      elsif parsed["error"]
+        raise "Ollama error: #{parsed['error']}"
+      else
+        raise "Unexpected response format from Ollama: #{parsed}"
+      end
+    rescue JSON::ParserError => e
+      raise "Invalid JSON response from Ollama: #{e.message}"
+    end
+
+    def prompt_for(chunk_content)
+      <<~PROMPT.strip
+        You generate contextual labels for retrieval systems.
+        Write a concise 1-2 sentence context describing how the chunk fits in the full document.
+        Return only the context text.
+
         <document>
         #{@document_content}
         </document>
-      TEXT
-    end
 
-    def chunk_prompt(chunk_content)
-      <<~PROMPT.strip
-        Here is a chunk from the document provided earlier:
+        Here is the target chunk:
 
         <chunk>
         #{chunk_content}
         </chunk>
 
-        Give a short, succinct context (1-2 sentences) to situate this chunk within the overall document for search retrieval purposes.
-        Return ONLY the contextual description, nothing else.
-      PROMPT
-    end
-
-    def direct_prompt(chunk_content)
-      <<~PROMPT.strip
-        <document>
-        #{@document_content}
-        </document>
-
-        Here is a chunk from the above document:
-
-        <chunk>
-        #{chunk_content}
-        </chunk>
-
-        Give a short, succinct context (1-2 sentences) to situate this chunk within the overall document for search retrieval purposes.
-        Return ONLY the contextual description, nothing else.
+        Context:
       PROMPT
     end
   end
