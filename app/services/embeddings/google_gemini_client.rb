@@ -4,14 +4,22 @@ require "json"
 module Embeddings
   class GoogleGeminiClient
     BASE_URL = "https://generativelanguage.googleapis.com"
-    # gemma-3-27b-it gemma-3-1b-it
     MODEL = "gemma-3-27b-it"
+    LIGHT_MODEL = "gemma-3-1b-it"
     CACHE_MODEL = "gemini-2.0-flash-lite"
 
-    def initialize
+    def initialize(connection: nil)
+      @conn = connection || self.class.connection
+    end
+
+    def self.connection
+      @connection ||= build_connection
+    end
+
+    def self.build_connection
       api_key = ENV.fetch("GOOGLE_API_KEY") { raise "GOOGLE_API_KEY environment variable is not set" }
 
-      @conn = Faraday.new(url: BASE_URL) do |f|
+      Faraday.new(url: BASE_URL) do |f|
         f.request :json
         f.adapter Faraday.default_adapter
         f.params["key"] = api_key
@@ -19,21 +27,10 @@ module Embeddings
       end
     end
 
-    def generate(prompt)
-      response = @conn.post("/v1beta/models/#{MODEL}:generateContent") do |req|
-        req.headers["Content-Type"] = "application/json"
-        req.body = {
-          contents: [
-            {
-              parts: [
-                { text: prompt }
-              ]
-            }
-          ]
-        }.to_json
-      end
+    def generate(prompt, model: MODEL, generate_metrics: false)
+      response = post_generate_content(prompt, model)
 
-      parse_response(response)
+      generate_metrics ? parse_response_with_metrics(response) : parse_response(response)
     rescue Faraday::ClientError => e
       body = JSON.parse(e.response[:body]) rescue {}
       raise "Google Gemini API error: #{body.dig('error', 'message') || e.message}"
@@ -94,6 +91,21 @@ module Embeddings
 
     private
 
+    def post_generate_content(prompt, model)
+      @conn.post("/v1beta/models/#{model}:generateContent") do |req|
+        req.headers["Content-Type"] = "application/json"
+        req.body = {
+          contents: [
+            {
+              parts: [
+                { text: prompt }
+              ]
+            }
+          ]
+        }.to_json
+      end
+    end
+
     def parse_response(response)
       parsed = JSON.parse(response.body)
 
@@ -107,6 +119,45 @@ module Embeddings
       candidates.first.dig("content", "parts", 0, "text") || raise("Unexpected response format from Google Gemini: #{parsed}")
     rescue JSON::ParserError => e
       raise "Invalid JSON response from Google Gemini: #{e.message}"
+    end
+
+    def parse_response_with_metrics(response)
+      parsed = JSON.parse(response.body)
+
+      if parsed["error"]
+        raise "Google Gemini API error: #{parsed['error']['message']}"
+      end
+
+      candidates = parsed.dig("candidates")
+      raise "No candidates returned by Google Gemini API" if candidates.nil? || candidates.empty?
+
+      content = candidates.first.dig("content", "parts", 0, "text") || raise("Unexpected response format from Google Gemini: #{parsed}")
+      usage = parsed["usageMetadata"] || parsed["usage_metadata"] || {}
+
+      output_tokens = token_value(usage, "candidatesTokenCount", "candidates_token_count", "outputTokenCount", "output_token_count")
+      input_tokens = token_value(usage, "promptTokenCount", "prompt_token_count", "inputTokenCount", "input_token_count")
+      total_tokens = token_value(usage, "totalTokenCount", "total_token_count")
+
+      if input_tokens.zero? && total_tokens.positive? && output_tokens.positive?
+        input_tokens = [total_tokens - output_tokens, 0].max
+      end
+
+      {
+        content: content,
+        input_tokens: input_tokens,
+        output_tokens: output_tokens
+      }
+    rescue JSON::ParserError => e
+      raise "Invalid JSON response from Google Gemini: #{e.message}"
+    end
+
+    def token_value(usage, *keys)
+      keys.each do |key|
+        value = usage[key]
+        return value.to_i if value
+      end
+
+      0
     end
   end
 end
