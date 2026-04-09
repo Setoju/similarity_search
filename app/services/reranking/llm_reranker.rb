@@ -16,10 +16,15 @@ module Reranking
   class LlmReranker
     DEFAULT_THRESHOLD = 5
 
-    def initialize(query, results, threshold: DEFAULT_THRESHOLD)
+    attr_reader :token_usage
+
+    def initialize(query, results, threshold: DEFAULT_THRESHOLD, gemini_client: Embeddings::GoogleGeminiClient.new, track_metrics: false)
       @query = query
       @results = results
       @threshold = threshold.clamp(0, 10)
+      @gemini_client = gemini_client
+      @track_metrics = track_metrics
+      @token_usage = { input_tokens: 0, output_tokens: 0 }
     end
 
     def call
@@ -36,8 +41,19 @@ module Reranking
 
     def score_results
       prompt = build_prompt
-      response = Embeddings::GoogleGeminiClient.new.generate(prompt)
-      apply_scores(parse_scores(response))
+      if @track_metrics
+        response = @gemini_client.generate(
+          prompt,
+          model: Embeddings::GoogleGeminiClient::LIGHT_MODEL,
+          generate_metrics: true
+        )
+        @token_usage[:input_tokens] += response[:input_tokens].to_i
+        @token_usage[:output_tokens] += response[:output_tokens].to_i
+        apply_scores(parse_scores(response[:content]))
+      else
+        response = @gemini_client.generate(prompt, model: Embeddings::GoogleGeminiClient::LIGHT_MODEL)
+        apply_scores(parse_scores(response))
+      end
     rescue => e
       Rails.logger.warn "[Reranking::LlmReranker] Reranking failed, using fallback: #{e.message}"
       apply_scores(fallback_scores)

@@ -1,13 +1,29 @@
 module QueryRewriting
   class Decomposer
-    def initialize(query)
+    attr_reader :token_usage
+
+    def initialize(query, gemini_client: Embeddings::GoogleGeminiClient.new, track_metrics: false)
       @query = query
+      @gemini_client = gemini_client
+      @track_metrics = track_metrics
+      @token_usage = { input_tokens: 0, output_tokens: 0 }
     end
 
     def call
       prompt = build_prompt
-      response = Embeddings::GoogleGeminiClient.new.generate(prompt)
-      parse_response(response)
+      if @track_metrics
+        response = @gemini_client.generate(
+          prompt,
+          model: Embeddings::GoogleGeminiClient::LIGHT_MODEL,
+          generate_metrics: true
+        )
+        @token_usage[:input_tokens] += response[:input_tokens].to_i
+        @token_usage[:output_tokens] += response[:output_tokens].to_i
+        parse_response(response[:content])
+      else
+        response = @gemini_client.generate(prompt, model: Embeddings::GoogleGeminiClient::LIGHT_MODEL)
+        parse_response(response)
+      end
     end
 
     private
