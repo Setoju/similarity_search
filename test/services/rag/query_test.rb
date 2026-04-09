@@ -82,4 +82,58 @@ class Rag::QueryTest < ActiveSupport::TestCase
       assert result[:sources].length <= 1
     end
   end
+
+  test "includes metrics in result when track_metrics is enabled" do
+    create_doc_with_chunk("Ruby on Rails guide", @query_embedding)
+    stub_gemini_response("Rails guide answer.")
+    stub_gemini_response_with_metrics("Rails guide answer.", 100, 50)
+
+    result = Rag::Query.new("Rails", track_metrics: true).call
+
+    assert result.key?(:metrics)
+    assert result[:metrics].key?(:total_latency_ms)
+    assert result[:metrics].key?(:total_input_tokens)
+    assert result[:metrics].key?(:total_output_tokens)
+    assert result[:metrics].key?(:total_tokens)
+  end
+
+  test "does not include metrics when track_metrics is disabled" do
+    create_doc_with_chunk("Ruby on Rails guide", @query_embedding)
+    stub_gemini_response("Rails guide answer.")
+
+    result = Rag::Query.new("Rails", track_metrics: false).call
+
+    assert_nil result[:metrics]
+  end
+
+  test "tracks retrieval phase latency" do
+    create_doc_with_chunk("Ruby on Rails framework", @query_embedding)
+    stub_gemini_response_with_metrics("Answer.", 100, 50)
+
+    result = Rag::Query.new("Rails", track_metrics: true).call
+
+    assert result[:metrics][:phases].key?("retrieval")
+    assert result[:metrics][:phases]["retrieval"][:latency_ms] >= 0
+  end
+
+  test "tracks llm_generation tokens and latency" do
+    create_doc_with_chunk("Ruby on Rails framework", @query_embedding)
+    stub_gemini_response_with_metrics("Answer.", 150, 75)
+
+    result = Rag::Query.new("Rails", track_metrics: true).call
+
+    assert result[:metrics][:phases].key?("llm_generation")
+    assert_equal 150, result[:metrics][:phases]["llm_generation"][:input_tokens]
+    assert_equal 75, result[:metrics][:phases]["llm_generation"][:output_tokens]
+  end
+
+  test "tracks hyde query rewriting phase when enabled" do
+    create_doc_with_chunk("Ruby on Rails framework", @query_embedding)
+    stub_ollama(@query_embedding)
+    stub_gemini_response_with_metrics("Answer.", 100, 50)
+
+    result = Rag::Query.new("Rails", hyde: true, track_metrics: true).call
+
+    assert result[:metrics][:phases].key?("query_rewriting")
+  end
 end

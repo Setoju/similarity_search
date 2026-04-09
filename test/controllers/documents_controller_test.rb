@@ -108,6 +108,8 @@ class DocumentsControllerTest < ActionDispatch::IntegrationTest
         body: { embedding: @sample_embedding }.to_json,
         headers: { "Content-Type" => "application/json" }
       )
+
+    stub_ollama_generate("safe")
   end
 
   def stub_gemini_success

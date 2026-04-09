@@ -5,6 +5,7 @@ class DocumentEmbeddingJobTest < ActiveJob::TestCase
     @sample_embedding = Array.new(768) { rand(-1.0..1.0) }
     ENV["GOOGLE_API_KEY"] = "test-api-key"
     stub_connection
+    stub_ollama_generate("This chunk explains the document.")
     stub_gemini_cache
   end
 

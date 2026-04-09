@@ -8,10 +8,11 @@ require_relative "../config/environment"
 require "rails/test_help"
 require "webmock/minitest"
 
-GEMINI_URL = /generativelanguage\.googleapis\.com\/v1beta\/models\/gemma-3-27b-it:generateContent/
+GEMINI_URL = /generativelanguage\.googleapis\.com\/v1beta\/models\/gemma-3-(27b|1b)-it:generateContent/
 GEMINI_CACHE_URL = /generativelanguage\.googleapis\.com\/v1beta\/cachedContents/
 GEMINI_CACHE_MODEL_URL = /generativelanguage\.googleapis\.com\/v1beta\/models\/gemini-2.0-flash-lite:generateContent/
 GEMINI_CACHE_DELETE_URL = /generativelanguage\.googleapis\.com\/v1beta\/cachedContents/
+OLLAMA_GENERATE_URL = "http://localhost:11434/api/generate"
 
 module ActiveSupport
   class TestCase
@@ -31,9 +32,32 @@ module ActiveSupport
         )
     end
 
+    # Stubs the Ollama generation endpoint to return the given response text.
+    def stub_ollama_generate(text = "safe")
+      stub_request(:post, OLLAMA_GENERATE_URL)
+        .to_return(
+          status: 200,
+          body: { response: text }.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+    end
+
     # Stubs the Google Gemini generateContent endpoint to return the given text.
     def stub_gemini_response(text)
       body = { candidates: [{ content: { parts: [{ text: text }] } }] }.to_json
+      stub_request(:post, GEMINI_URL)
+        .to_return(status: 200, body: body, headers: { "Content-Type" => "application/json" })
+    end
+
+    # Stubs the Google Gemini generateContent endpoint with token usage metrics.
+    def stub_gemini_response_with_metrics(text, input_tokens = 100, output_tokens = 50)
+      body = {
+        candidates: [{ content: { parts: [{ text: text }] } }],
+        usageMetadata: {
+          promptTokenCount: input_tokens,
+          candidatesTokenCount: output_tokens
+        }
+      }.to_json
       stub_request(:post, GEMINI_URL)
         .to_return(status: 200, body: body, headers: { "Content-Type" => "application/json" })
     end

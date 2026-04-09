@@ -9,11 +9,11 @@ module Embeddings
     CACHE_MODEL = "gemini-2.0-flash-lite"
 
     def initialize(connection: nil)
-      @conn = connection || self.class.connection
+      @conn = connection || self.class.build_connection
     end
 
     def self.connection
-      @connection ||= build_connection
+      build_connection
     end
 
     def self.build_connection
